@@ -82,4 +82,80 @@ public class ExperimentRunner {
                         == listResult.getRooms())
         );
     }
+
+    public static void runScalingExperiment() {
+
+        int[] sizes = {
+                100,
+                500,
+                1000,
+                2000,
+                3000,
+                4000,
+                5000
+        };
+
+        System.out.println();
+        System.out.println("SCALING EXPERIMENT");
+        System.out.println(
+                "n, family, rooms, heapOperations, heapMs, "
+                        + "listOperations, listMs"
+        );
+
+        for (int n : sizes) {
+
+            List<Session> growing =
+                    DataGenerator.generateGrowingRooms(n);
+
+            BenchmarkResult heapGrowing =
+                    Benchmark.measure(
+                            growing,
+                            HeapRoomAllocator::allocate
+                    );
+
+            BenchmarkResult listGrowing =
+                    Benchmark.measure(
+                            growing,
+                            ListRoomAllocator::allocate
+                    );
+
+            System.out.printf(
+                    "%d,growing,%d,%d,%.4f,%d,%.4f%n",
+                    n,
+                    heapGrowing.getRooms(),
+                    heapGrowing.getOperations(),
+                    heapGrowing.getMedianMilliseconds(),
+                    listGrowing.getOperations(),
+                    listGrowing.getMedianMilliseconds()
+            );
+
+            List<Session> fixed =
+                    DataGenerator.generateFixedRooms(
+                            n,
+                            8
+                    );
+
+            BenchmarkResult heapFixed =
+                    Benchmark.measure(
+                            fixed,
+                            HeapRoomAllocator::allocate
+                    );
+
+            BenchmarkResult listFixed =
+                    Benchmark.measure(
+                            fixed,
+                            ListRoomAllocator::allocate
+                    );
+
+            System.out.printf(
+                    "%d,fixed,%d,%d,%.4f,%d,%.4f%n",
+                    n,
+                    heapFixed.getRooms(),
+                    heapFixed.getOperations(),
+                    heapFixed.getMedianMilliseconds(),
+                    listFixed.getOperations(),
+                    listFixed.getMedianMilliseconds()
+            );
+        }
+    }
 }

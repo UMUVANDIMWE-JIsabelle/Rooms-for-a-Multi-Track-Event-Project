@@ -158,6 +158,9 @@ public class Main {
                     ListRoomAllocator::allocate
             );
 
+            // Run scaling experiments for different input sizes
+            ExperimentRunner.runScalingExperiment();
+
         } catch (IOException e) {
 
             System.out.println(
