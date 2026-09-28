@@ -1,4 +1,8 @@
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.List;
+import java.io.File;
 import java.util.function.Function;
 
 public class ExperimentRunner {
@@ -95,12 +99,24 @@ public class ExperimentRunner {
                 5000
         };
 
-        System.out.println();
+                System.out.println();
         System.out.println("SCALING EXPERIMENT");
         System.out.println(
                 "n, family, rooms, heapOperations, heapMs, "
                         + "listOperations, listMs"
         );
+
+                new File("results").mkdirs();
+
+        PrintWriter csvWriter;
+
+        try {
+            csvWriter = new PrintWriter(new FileWriter("results/scaling_results.csv"));
+        } catch (IOException e) {
+            throw new RuntimeException("Could not open CSV output file: " + e.getMessage());
+        }
+
+        csvWriter.println("n,family,rooms,heapOperations,heapMs,listOperations,listMs");
 
         for (int n : sizes) {
 
@@ -120,6 +136,16 @@ public class ExperimentRunner {
                     );
 
             System.out.printf(
+                    "%d,growing,%d,%d,%.4f,%d,%.4f%n",
+                    n,
+                    heapGrowing.getRooms(),
+                    heapGrowing.getOperations(),
+                    heapGrowing.getMedianMilliseconds(),
+                    listGrowing.getOperations(),
+                    listGrowing.getMedianMilliseconds()
+            );
+
+                        csvWriter.printf(
                     "%d,growing,%d,%d,%.4f,%d,%.4f%n",
                     n,
                     heapGrowing.getRooms(),
@@ -156,6 +182,18 @@ public class ExperimentRunner {
                     listFixed.getOperations(),
                     listFixed.getMedianMilliseconds()
             );
+                        csvWriter.printf(
+                    "%d,fixed,%d,%d,%.4f,%d,%.4f%n",
+                    n,
+                    heapFixed.getRooms(),
+                    heapFixed.getOperations(),
+                    heapFixed.getMedianMilliseconds(),
+                    listFixed.getOperations(),
+                    listFixed.getMedianMilliseconds()
+            );
         }
+                csvWriter.close();
+        System.out.println();
+        System.out.println("Scaling results written to results/scaling_results.csv");
     }
 }

@@ -69,4 +69,4 @@ public class Benchmark {
 
         return (copy[middle - 1] + copy[middle]) / 2.0;
     }
-}t
+}
