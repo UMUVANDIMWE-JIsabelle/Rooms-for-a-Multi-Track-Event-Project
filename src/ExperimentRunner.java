@@ -1,11 +1,18 @@
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.io.File;
+import java.util.Locale;
 import java.util.function.Function;
 
 public class ExperimentRunner {
+
+    private static final String CSV_HEADER =
+            "n,family,rooms,maxOverlap,heapOperations,heapMs,"
+                    + "listOperations,listMs,optimal";
 
     public static void runExperiment(
             String name,
@@ -24,6 +31,25 @@ public class ExperimentRunner {
                 Benchmark.measure(
                         sessions,
                         listAlgorithm
+                );
+
+         /* Shared work, timed separately. Both allocators start by copying the input and sorting it by start time. This block times only that copy-and-sort, so the report can say how
+         * much of each measured time is common to both methods.*/
+        
+        BenchmarkResult sharedWork =
+                Benchmark.measure(
+                        sessions,
+                        input -> {
+                            List<Session> copy = new ArrayList<>(input);
+                            copy.sort(
+                                    Comparator.comparingInt(Session::getStart)
+                            );
+                            return new Result(
+                                    copy.size(),
+                                    new ArrayList<>(),
+                                    0
+                            );
+                        }
                 );
 
         int lowerBound =
@@ -50,6 +76,7 @@ public class ExperimentRunner {
                         + heapResult.getOperations()
         );
         System.out.printf(
+                Locale.ROOT,
                 "Median time: %.4f ms%n",
                 heapResult.getMedianMilliseconds()
         );
@@ -65,8 +92,16 @@ public class ExperimentRunner {
                         + listResult.getOperations()
         );
         System.out.printf(
+                Locale.ROOT,
                 "Median time: %.4f ms%n",
                 listResult.getMedianMilliseconds()
+        );
+
+        System.out.println();
+        System.out.printf(
+                Locale.ROOT,
+                "Shared work (copy + sort of the input), median: %.4f ms%n",
+                sharedWork.getMedianMilliseconds()
         );
 
         System.out.println();
@@ -99,101 +134,97 @@ public class ExperimentRunner {
                 5000
         };
 
-                System.out.println();
+        int fixedRoomCount = 8;
+
+        new File("results").mkdirs();
+
+        System.out.println();
         System.out.println("SCALING EXPERIMENT");
+        System.out.println(CSV_HEADER);
+
+        try (PrintWriter csvWriter =
+                     new PrintWriter(
+                             new FileWriter("results/scaling_results.csv")
+                     )) {
+
+            csvWriter.println(CSV_HEADER);
+
+            for (int n : sizes) {
+
+                scalingRow(
+                        n,
+                        "growing",
+                        DataGenerator.generateGrowingRooms(n),
+                        csvWriter
+                );
+
+                scalingRow(
+                        n,
+                        "fixed",
+                        DataGenerator.generateFixedRooms(n, fixedRoomCount),
+                        csvWriter
+                );
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    "Could not write results/scaling_results.csv: "
+                            + e.getMessage()
+            );
+        }
+
+        System.out.println();
         System.out.println(
-                "n, family, rooms, heapOperations, heapMs, "
-                        + "listOperations, listMs"
+                "Scaling results written to results/scaling_results.csv"
+        );
+    }
+
+    /*
+     * Runs both allocators on one generated instance, checks that
+     * both room counts equal the independently computed maximum
+     * overlap (the lower bound), then prints and saves one CSV row.
+     */
+    private static void scalingRow(
+            int n,
+            String family,
+            List<Session> sessions,
+            PrintWriter csvWriter
+    ) {
+
+        BenchmarkResult heap =
+                Benchmark.measure(
+                        sessions,
+                        HeapRoomAllocator::allocate
+                );
+
+        BenchmarkResult list =
+                Benchmark.measure(
+                        sessions,
+                        ListRoomAllocator::allocate
+                );
+
+        int lowerBound =
+                OptimalityChecker.maximumOverlap(sessions);
+
+        boolean optimal =
+                heap.getRooms() == lowerBound
+                        && list.getRooms() == lowerBound;
+
+        String row = String.format(
+                Locale.ROOT,
+                "%d,%s,%d,%d,%d,%.4f,%d,%.4f,%b",
+                n,
+                family,
+                heap.getRooms(),
+                lowerBound,
+                heap.getOperations(),
+                heap.getMedianMilliseconds(),
+                list.getOperations(),
+                list.getMedianMilliseconds(),
+                optimal
         );
 
-                new File("results").mkdirs();
-
-        PrintWriter csvWriter;
-
-        try {
-            csvWriter = new PrintWriter(new FileWriter("results/scaling_results.csv"));
-        } catch (IOException e) {
-            throw new RuntimeException("Could not open CSV output file: " + e.getMessage());
-        }
-
-        csvWriter.println("n,family,rooms,heapOperations,heapMs,listOperations,listMs");
-
-        for (int n : sizes) {
-
-            List<Session> growing =
-                    DataGenerator.generateGrowingRooms(n);
-
-            BenchmarkResult heapGrowing =
-                    Benchmark.measure(
-                            growing,
-                            HeapRoomAllocator::allocate
-                    );
-
-            BenchmarkResult listGrowing =
-                    Benchmark.measure(
-                            growing,
-                            ListRoomAllocator::allocate
-                    );
-
-            System.out.printf(
-                    "%d,growing,%d,%d,%.4f,%d,%.4f%n",
-                    n,
-                    heapGrowing.getRooms(),
-                    heapGrowing.getOperations(),
-                    heapGrowing.getMedianMilliseconds(),
-                    listGrowing.getOperations(),
-                    listGrowing.getMedianMilliseconds()
-            );
-
-                        csvWriter.printf(
-                    "%d,growing,%d,%d,%.4f,%d,%.4f%n",
-                    n,
-                    heapGrowing.getRooms(),
-                    heapGrowing.getOperations(),
-                    heapGrowing.getMedianMilliseconds(),
-                    listGrowing.getOperations(),
-                    listGrowing.getMedianMilliseconds()
-            );
-
-            List<Session> fixed =
-                    DataGenerator.generateFixedRooms(
-                            n,
-                            8
-                    );
-
-            BenchmarkResult heapFixed =
-                    Benchmark.measure(
-                            fixed,
-                            HeapRoomAllocator::allocate
-                    );
-
-            BenchmarkResult listFixed =
-                    Benchmark.measure(
-                            fixed,
-                            ListRoomAllocator::allocate
-                    );
-
-            System.out.printf(
-                    "%d,fixed,%d,%d,%.4f,%d,%.4f%n",
-                    n,
-                    heapFixed.getRooms(),
-                    heapFixed.getOperations(),
-                    heapFixed.getMedianMilliseconds(),
-                    listFixed.getOperations(),
-                    listFixed.getMedianMilliseconds()
-            );
-                        csvWriter.printf(
-                    "%d,fixed,%d,%d,%.4f,%d,%.4f%n",
-                    n,
-                    heapFixed.getRooms(),
-                    heapFixed.getOperations(),
-                    heapFixed.getMedianMilliseconds(),
-                    listFixed.getOperations(),
-                    listFixed.getMedianMilliseconds()
-            );
-        }
-                csvWriter.close();
-        System.out.println();
-        System.out.println("Scaling results written to results/scaling_results.csv");
+        System.out.println(row);
+        csvWriter.println(row);
     }
 }

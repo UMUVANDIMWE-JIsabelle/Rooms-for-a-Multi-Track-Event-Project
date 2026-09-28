@@ -1,3 +1,4 @@
+
 import java.io.IOException;
 import java.util.List;
 
@@ -122,6 +123,37 @@ public class Main {
             }
 
             /*
+             * The two versions use the same number of rooms, but the
+             * heap picks the room that becomes free EARLIEST while the
+             * list picks the FIRST free room it meets. Count how many
+             * sessions therefore end up in a different room.
+             */
+            List<RoomAssignment> heapAssignments =
+                    mainHeap.getAssignments();
+
+            List<RoomAssignment> listAssignments =
+                    mainList.getAssignments();
+
+            int differentRoom = 0;
+
+            for (int i = 0; i < heapAssignments.size(); i++) {
+
+                if (heapAssignments.get(i).getRoomNumber()
+                        != listAssignments.get(i).getRoomNumber()) {
+
+                    differentRoom++;
+                }
+            }
+
+            System.out.println();
+            System.out.println(
+                    "Sessions given a different room by the list version: "
+                            + differentRoom
+                            + " of "
+                            + heapAssignments.size()
+            );
+
+            /*
              * ==========================================
              * 4. GENERATED INPUTS
              * ==========================================
@@ -143,6 +175,13 @@ public class Main {
              * 5. BENCHMARKS
              * ==========================================
              */
+
+            ExperimentRunner.runExperiment(
+                    "Main dataset - 40 sessions",
+                    mainSessions,
+                    HeapRoomAllocator::allocate,
+                    ListRoomAllocator::allocate
+            );
 
             ExperimentRunner.runExperiment(
                     "Growing Rooms - 5000 sessions",

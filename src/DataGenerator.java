@@ -3,8 +3,9 @@ import java.util.List;
 
 public class DataGenerator {
 
-    /* Family 1:All sessions overlap.Therefore, n sessions require n rooms. */
-
+   
+     /* Family 1: the number of rooms grows with n. Every session runs from 09:00 to 10:00, so all n sessions overlap at the same moment. The maximum overlap is n, so n rooms are needed: r = n.
+     */
     public static List<Session> generateGrowingRooms(int n) {
 
         List<Session> sessions = new ArrayList<>();
@@ -27,9 +28,10 @@ public class DataGenerator {
         return sessions;
     }
 
-    /* Family 2: A fixed number of rooms is used repeatedly.Eight sessions run at the same time,
-     * then the next group of eight runs later. Therefore, the number of rooms stays at eight while n increases. */
-
+    /*
+     * Family 2: the number of rooms stays fixed however large n is. Sessions come in groups of roomCount. All sessions in a group start together and last 30 minutes; the next group starts at the
+     * exact moment the previous group ends (which the problem treats as not overlapping). At most roomCount sessions ever run at once, so r = roomCount for every n >= roomCount.
+     */
     public static List<Session> generateFixedRooms(
             int n,
             int roomCount
@@ -42,8 +44,6 @@ public class DataGenerator {
         for (int i = 0; i < n; i++) {
 
             int group = i / roomCount;
-
-            int roomPosition = i % roomCount;
 
             int start =
                     9 * 60
