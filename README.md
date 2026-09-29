@@ -60,3 +60,6 @@ This creates four charts in a `charts/` folder:
   to confirm it's actually the minimum.
 - Working directory matters: run `java` from the project root, not from
   inside `src`, or it won't find the `data` folder.
+
+
+            wrtitten by J'Isabelle UMUVANDIMWE
