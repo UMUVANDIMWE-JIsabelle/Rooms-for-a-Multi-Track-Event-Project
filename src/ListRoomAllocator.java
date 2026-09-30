@@ -1,16 +1,12 @@
+
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 public class ListRoomAllocator {
 
     public static Result allocate(List<Session> input) {
 
-        List<Session> sessions = new ArrayList<>(input);
-
-        sessions.sort(
-                Comparator.comparingInt(Session::getStart)
-        );
+        List<Session> sessions = input;
 
         List<Room> rooms = new ArrayList<>();
         List<RoomAssignment> assignments = new ArrayList<>();

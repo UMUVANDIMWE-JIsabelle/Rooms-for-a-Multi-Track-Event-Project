@@ -1,5 +1,5 @@
+
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 
@@ -7,11 +7,7 @@ public class HeapRoomAllocator {
 
     public static Result allocate(List<Session> input) {
 
-        List<Session> sessions = new ArrayList<>(input);
-
-        sessions.sort(
-                Comparator.comparingInt(Session::getStart)
-        );
+        List<Session> sessions = input;
 
        
          /* Operation counter. It counts every comparison of two finish times that the algorithm performs:
